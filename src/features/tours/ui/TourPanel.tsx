@@ -1,7 +1,7 @@
-import { Route, ArrowRight, Pause, Play, X } from "lucide-react";
+import { Route, ArrowRight, Pause, Play, X, History } from "lucide-react";
 import { routes, artworkById } from "../../../shared/catalog";
 import type { TourState } from "../../../shared/types";
-import { tourProgress, tourRoute } from "../lib/routeProgress";
+import { tourProgress, tourRoute, tourStopCount } from "../lib/routeProgress";
 export function TourPanel({
   state,
   onStart,
@@ -17,29 +17,45 @@ export function TourPanel({
   onStop: () => void;
   onNext: () => void;
 }) {
-  const current = tourRoute(state);
+  const route = tourRoute(state);
+  const isReview = !!state.review;
+  const total = tourStopCount(state);
+  const currentArtwork = isReview
+    ? artworkById(state.review?.[state.step]?.artworkId || null)
+    : artworkById(route?.stops[state.step] || null);
   return (
     <section className="tour-panel">
       <div className="section-title">
-        <Route size={16} />
-        <span>主题导览</span>
-        <small>CURATED JOURNEYS</small>
+        {isReview ? <History size={16} /> : <Route size={16} />}
+        <span>{isReview ? "记忆回放" : "主题导览"}</span>
+        <small>{isReview ? "MEMORY REPLAY" : "CURATED JOURNEYS"}</small>
       </div>
-      {current && state.phase !== "idle" ? (
+      {(route || isReview) && state.phase !== "idle" ? (
         <div className="current-tour">
           <span className="eyebrow">
-            正在探索 ·{" "}
+            {isReview ? "正在回放 · " : "正在探索 · "}
             {state.phase === "done"
               ? "已完成"
-              : `${state.step + 1} / ${current.stops.length}`}
+              : `${state.step + 1} / ${total}`}
           </span>
-          <h3>{current.name}</h3>
+          <h3>{isReview ? state.label : route?.name}</h3>
           <progress value={tourProgress(state)} max="1" />
           <p>
             {state.phase === "done"
-              ? "这段旅程已完成，收藏你的所见。"
-              : `${state.phase === "walking" ? "正在前往" : state.phase === "paused" ? "导览已暂停" : "正在讲解"} · ${artworkById(current.stops[state.step])?.title}`}
+              ? isReview
+                ? "这段记忆回放已完成，原导览进度将在结束后恢复。"
+                : "这段旅程已完成，收藏你的所见。"
+              : `${
+                  state.phase === "walking"
+                    ? "正在前往"
+                    : state.phase === "paused"
+                      ? "已暂停"
+                      : "正在讲解"
+                } · ${currentArtwork?.title || ""}`}
           </p>
+          {isReview && state.suspended && (
+            <p className="resume-hint">结束后恢复原导览进度</p>
+          )}
           <div className="tour-controls">
             {state.phase !== "done" && (
               <>

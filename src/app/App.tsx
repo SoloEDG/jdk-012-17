@@ -14,7 +14,7 @@ import { Viewport, Map } from "../features/space";
 import { ArtworkList, ArtworkDetail } from "../features/catalog";
 import { TourPanel } from "../features/tours";
 import { AudioPlayer } from "../features/narration";
-import { CollectionPanel } from "../features/collection";
+import { CollectionPanel, createRecap, downloadRecap } from "../features/collection";
 import { artworks, artworkById } from "../shared/catalog";
 import { useGallery } from "./useGallery";
 export default function App() {
@@ -239,9 +239,33 @@ export default function App() {
           {tab === "collection" ? (
             <CollectionPanel
               document={g.collection.document}
+              position={g.walker.position}
+              active={g.catalog.active}
+              reviewActive={g.reviewActive}
               onSelect={g.go}
               onNote={g.collection.note}
               onToggle={g.collection.toggle}
+              onMemoryNote={g.collection.memoryNote}
+              onOpenMemory={(id) => {
+                g.openMemory(id);
+                setTab("explore");
+              }}
+              onReplayAll={() => {
+                g.replayAll();
+                setTab("journeys");
+              }}
+              onReplayChapter={(id) => {
+                g.replayChapter(id);
+                setTab("journeys");
+              }}
+              onCreateChapter={g.collection.createChapter}
+              onRenameChapter={g.collection.renameChapter}
+              onDeleteChapter={g.collection.deleteChapter}
+              onMergeChapters={g.collection.mergeChapters}
+              onAddToChapter={g.collection.addToChapter}
+              onRemoveFromChapter={g.collection.removeFromChapter}
+              onMoveInChapter={g.collection.moveInChapter}
+              onMoveChapter={g.collection.moveChapter}
             />
           ) : tab === "journeys" ? (
             <>
@@ -289,7 +313,17 @@ export default function App() {
       </main>
       {g.collection.storageError && (
         <div className="storage-error">
-          浏览器存储已满，本次更改暂未保存，请下载回顾。
+          <p>
+            浏览器存储已满，本次更改暂未保存；当前页面内的记忆与章节仍然完整。
+          </p>
+          <button
+            className="text-button"
+            onClick={() =>
+              downloadRecap(createRecap(g.collection.document))
+            }
+          >
+            立即下载回顾留存
+          </button>
         </div>
       )}
       <AudioPlayer

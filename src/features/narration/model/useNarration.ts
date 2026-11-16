@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import type { AudioState } from "../../../shared/types";
 import { artworkById } from "../../../shared/catalog";
-import { captionAt } from "../lib/timeline";
+import { captionAt, segmentOffset } from "../lib/timeline";
 import { speak, stopSpeech } from "../lib/speech";
 export function useNarration(onEnd: () => void) {
   const [state, setState] = useState<AudioState>({
@@ -52,6 +52,17 @@ export function useNarration(onEnd: () => void) {
         playing: true,
       })),
     pause: () => setState((s) => ({ ...s, playing: false })),
+    /** 直接跳到被记住的语义段落开始播放 */
+    playSegment: (id: string, segment: number) => {
+      const a = artworkById(id);
+      if (!a) return;
+      setState((s) => ({
+        ...s,
+        artworkId: id,
+        elapsed: segmentOffset(a, segment),
+        playing: true,
+      }));
+    },
     toggle: () => setState((s) => ({ ...s, playing: !s.playing })),
     seek: (elapsed: number) => setState((s) => ({ ...s, elapsed })),
     rate: (rate: number) => setState((s) => ({ ...s, rate })),
